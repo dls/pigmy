@@ -10,7 +10,7 @@ workloads.
 If you are the sort of person who finds code easier to read than
 equations, this library may also prove useful in learning how pgms
 function, and in honing your probabilistic intuition
-generally. Consider working through "pgm_tutorial.rb" in the test
+generally. Consider working through [pgm_tutorial.rb](https://github.com/dls/pigmy/blob/master/test/pgm_tutorial.rb) in the test
 directory and work out why each test passes.
 
 This library is currently in a state of high flux. No interfaces are

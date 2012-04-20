@@ -1,50 +1,64 @@
 require "test/unit"
-require "src/jpd.rb"
+require "src/pgm.rb"
 
 class PgmTutorial < Test::Unit::TestCase
   def assert_pe_equal(expected, result)
     assert_equal([], expected.keys - result.keys)
     for k in expected.keys
-      assert_in_delta(expected[k], result[k], 0.01)
+      assert_in_delta(expected[k], result[k], 0.05)
     end
   end
 
   # works through Daphne Koller's Student example network
   # for best results, read this after viewing week 1 at
   # https://class.coursera.org/pgm/lecture/preview
-  def university_example_test
+  def university_test
     pmg = PGM.new
 
-    # here we build out some nodes
+    # first we build out some nodes
     pmg.add_node(:iq, [:high_iq, :low_iq])
+    # you should read the last line as:
+    # "there something called iq that can is high or low"
     pgm.add_node(:sat_score, [:high, :low], [:iq])
+    # read "sat_scores can be high or low, and depends on iq"
 
     # and then add data we have observed
     pgm.train({:iq => :high_iq, :sat_score => :high}, 90)
+    # "The number of high sat scoring high iq people I know is 90"
     pgm.train({:iq => :high_iq, :sat_score => :low}, 10)
+
+    # once there is data you can ask questions
+    assert_pe_equal({:high => 90/100.0, :low => 10/100.0},
+                    pgm.estimate(:sat_score))
+
+    # changing the data changes the answers
     pgm.train({:iq => :low_iq, :sat_score => :high}, 400)
     pgm.train({:iq => :low_iq, :sat_score => :low}, 600)
 
-
-    # once there is data you can ask questions
-
-    # either with no priors...
-    assert_pe_equal({:high => 490 / 1100.0, :low => 610 / 1100.0},
+    assert_pe_equal({:high => 490/1100.0, :low => 610/1100.0},
                     pgm.estimate(:sat_score))
-    assert_pe_equal({:high_iq => 100 / 1000.0, :low_iq => 900 / 1000.0},
+    assert_pe_equal({:high_iq => 100/1000.0, :low_iq => 900/1000.0},
                     pgm.estimate(:iq))
 
-    # or with given priors:
-    assert_pe_equal({:high, => 90, :low => 10},
-                    pgm.estimate(:sat_score, {:iq => :high}))
+    # If you know something about the data you are esimating, you can
+    # specify it to get better estimates
+    assert_pe_equal({:high => 90/100.0, :low => 10/100.0},
+                    pgm.estimate(:sat_score, {:iq => :high_iq}))
 
     # including givens that run "backwards"
-    assert_pe_equal({:high_iq => 90/100.0, :low_iq => 10/100.0},
+    assert_pe_equal({:high_iq => 90/490.0, :low_iq => 400/490.0},
                     pgm.estimate(:iq, {:sat_score => :high}))
 
+    # if you found the previous answer surprising, consider that in
+    # our data, the base estimate of high IQ was quite low. Knowing
+    # that someone scored highly makes it more likely that they are
+    # smart, but it is still more likey that they are not.
+    assert_pe_equal({:high_iq => 100/1100.0, :low_iq => 1000/1100.0},
+                    pgm.estimate(:iq))
+
     # priors don't have to be all or nothing
-    high_iq = (90 * 0.1) + (10 * 0.9)
-    low_iq = (400 * 0.1) + (600 * 0.9)
+    high_iq = (90 * 0.1) + (400 * 0.9)
+    low_iq = (10 * 0.1) + (600 * 0.9)
     assert_pe_equal({:high_iq => high_iq / (high_iq + low_iq),
                      :low_iq => low_iq / (high_iq + low_iq)},
                     pgm.estimate(:iq, {:sat_score => {:high => 0.9, :low => 0.1}}))
@@ -57,7 +71,7 @@ class PgmTutorial < Test::Unit::TestCase
     pgm.train({:iq => :low_iq, :sat_score => :low}, 550)
 
     # which of course updates the estimates
-    assert_pe_equal({:high, => (90 + 95) / 200.0, :low => (10 + 5) / 200.0},
+    assert_pe_equal({:high => (90 + 95) / 200.0, :low => (10 + 5) / 200.0},
                     pgm.estimate(:sat_score, {:iq => :high}))
     assert_pe_equal({:high_iq => 200 / 2000.0, :low_iq => 1800 / 2000.0},
                     pgm.estimate(:iq))
@@ -67,7 +81,7 @@ class PgmTutorial < Test::Unit::TestCase
     pgm.add_node(:grade, [:a, :b, :c], [:difficulty, :iq])
     pgm.add_node(:recommendation_letter, [:yes, :no], [:grade])
 
-    # though to get good estimates of the added values the pgm will need data
+    # though to get good estimates from the added values the pgm will need data
     assert_pe_equal({:hard => 0.5, :easy => 0.5},
                     pgm.estimate(:difficulty))
     pgm.train({:difficulty => :hard}, 400)
@@ -114,12 +128,12 @@ class PgmTutorial < Test::Unit::TestCase
 
     # even some non-obvious inferences are now easy (remember that sat
     # score was dependant on iq)
-    assert_pe_equal({:high_iq => 90/100.0, :low_iq => 10/100.0},
-                    pgm.estimate(:iq, {:sat_score => :high}))
-
     assert_pe_equal({:a => ((95/200.0) * 0.9) + ((40/200.0) * 0.1),
                      :b => ((80/200.0) * 0.9) + ((90/200.0) * 0.1),
                      :c => ((25/200.0) * 0.9) + ((70/200.0) * 0.1)},
                     pgm.estimate(:grade, {:sat_score => :high, :difficulty => :easy}))
+
+    assert_pe_equal({:high_iq => 90/100.0, :low_iq => 10/100.0},
+                    pgm.estimate(:iq, {:sat_score => :high}))
   end
 end

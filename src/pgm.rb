@@ -1,4 +1,4 @@
-require "./jpd.rb"
+require "src/jpd.rb"
 
 class PGM
   attr_accessor :node_values
