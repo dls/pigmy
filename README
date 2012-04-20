@@ -14,8 +14,8 @@ generally. Consider working through "pgm_tutorial.rb" in the test
 directory and work out why each test passes.
 
 This library is currently in a state of high flux. No interfaces are
-stable, it is being up to to movite my completion, get early feedback,
-etc.
+stable, it is only public to to movite my completion and get early
+feedback.
 
 Feedback and pull requests solicited :)
 
