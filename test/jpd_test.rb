@@ -15,7 +15,7 @@ class JpdTest < Test::Unit::TestCase
       counts[pulled] += 1
     end
     assert((counts.keys - [:a, :b]).empty?)
-    assert_in_delta(0.5, counts[:a] / (counts[:a] + counts[:b]), 0.05)
+    assert_in_delta(0.5, counts[:a] / (counts[:a] + counts[:b]), 0.02 )
   end
 
   def assert_pd_equal(expected, result)
@@ -33,9 +33,11 @@ class JpdTest < Test::Unit::TestCase
     assert_pd_equal({:a=>0.5, :b=>0.5}, @p.output_probs({[1,2] => [1]}))
 
     @p.update({[1,2] => [1]}, :a)
+    @p.update({[1,2] => [2]}, :a)
+    @p.update({[1,2] => [2]}, :b)
 
-    assert_pd_equal({:a=>0.98, :b=>0.02}, @p.output_probs(nil))
-    assert_pd_equal({:a=>0.98, :b=>0.02}, @p.output_probs({[1,2] => [1,2]}))
+    assert_pd_equal({:a=>0.66, :b=>0.33}, @p.output_probs(nil))
+    assert_pd_equal({:a=>0.66, :b=>0.33}, @p.output_probs({[1,2] => [1,2]}))
     assert_pd_equal({:a=>0.5, :b=>0.5}, @p.output_probs({[1,2] => [2]}))
     assert_pd_equal({:a=>0.99, :b=>0.01}, @p.output_probs({[1,2] => [1]}))
 
@@ -45,6 +47,6 @@ class JpdTest < Test::Unit::TestCase
       counts[pulled] += 1
     end
     assert((counts.keys - [:a, :b]).empty?)
-    assert_in_delta(0.98, counts[:a] / (counts[:a] + counts[:b]), 0.05)
+    assert_in_delta(0.66, counts[:a] / (counts[:a] + counts[:b]), 0.02)
   end
 end
