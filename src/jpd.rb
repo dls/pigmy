@@ -6,7 +6,6 @@ class JPD
   def initialize(inputs, outputs)
     @inputs = inputs
     @table = {}
-    @evidence = "__pgm-ev"
     @outputs = outputs
 
     tables = [@table]
@@ -23,9 +22,8 @@ class JPD
       next_tables = {}
     end
 
-    starting_p = 1.0 / outputs.length
+    starting_p = 0.01 # epsilon. no evidence yet
     for t in tables
-      t[@evidence] = 0
       for o in outputs
         t[o] = starting_p
       end
@@ -66,13 +64,7 @@ class JPD
 
   def update(given, output)
     for t in dfs_for_given(given)
-      e = t[@evidence] * 1.0
-      em = e / (e + 1.0)
-      for o in @outputs
-        t[o] *= em
-        t[o] += 1.0 / (e + 1.0) if o == output
-      end
-      t[@evidence] += 1
+      t[output] += 1
     end
   end
 
@@ -91,12 +83,6 @@ class JPD
       next_tables = {}
     end
     tables
-  end
-end
-
-def assert_equal(expected, got)
-  unless expected == got
-    puts "TEST FAIL: expected #{expected.inspect}, got #{got.inspect}"
   end
 end
 
