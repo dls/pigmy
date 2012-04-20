@@ -2,6 +2,16 @@ require "test/unit"
 require "src/jpd.rb"
 
 class PgmTutorial < Test::Unit::TestCase
+  def assert_pe_equal(expected, result)
+    assert_equal([], expected.keys - result.keys)
+    for k in expected.keys
+      assert_in_delta(expected[k], result[k], 0.01)
+    end
+  end
+
+  # works through Daphne Koller's Student example network
+  # for best results, read this after viewing week 1 at
+  # https://class.coursera.org/pgm/lecture/preview
   def university_example_test
     pmg = PGM.new
 
@@ -19,22 +29,25 @@ class PgmTutorial < Test::Unit::TestCase
     # once there is data you can ask questions
 
     # either with no priors...
-    assert_pg_equal({:high => 490 / 1100.0, :low => 610 / 1100.0},
-                    pgm.output_prob(:sat_score))
-    assert_pg_equal({:high_iq => 100 / 1000.0, :low_iq => 900 / 1000.0},
-                    pgm.output_prob(:iq))
+    assert_pe_equal({:high => 490 / 1100.0, :low => 610 / 1100.0},
+                    pgm.estimate(:sat_score))
+    assert_pe_equal({:high_iq => 100 / 1000.0, :low_iq => 900 / 1000.0},
+                    pgm.estimate(:iq))
 
     # or with given priors:
-    assert_pg_equal({:high, => 90, :low => 10},
-                    pgm.output_prob(:sat_score, {:iq => :high}))
+    assert_pe_equal({:high, => 90, :low => 10},
+                    pgm.estimate(:sat_score, {:iq => :high}))
 
     # including givens that run "backwards"
-    assert_pg_equal({:high_iq => 90/100.0, :low_iq => 10/100.0},
-                    pgm.output_prob(:iq, {:sat_score => :high}))
+    assert_pe_equal({:high_iq => 90/100.0, :low_iq => 10/100.0},
+                    pgm.estimate(:iq, {:sat_score => :high}))
 
     # priors don't have to be all or nothing
-    assert_pg_equal({:high_iq => 0.9, :low_iq => 0.1},
-                    pgm.output_prob(:iq, {:sat_score => {:high => 0.9, :low => 0.1}}))
+    high_iq = (90 * 0.1) + (10 * 0.9)
+    low_iq = (400 * 0.1) + (600 * 0.9)
+    assert_pe_equal({:high_iq => high_iq / (high_iq + low_iq),
+                     :low_iq => low_iq / (high_iq + low_iq)},
+                    pgm.estimate(:iq, {:sat_score => {:high => 0.9, :low => 0.1}}))
 
 
     # more data can be added at any time
@@ -44,37 +57,69 @@ class PgmTutorial < Test::Unit::TestCase
     pgm.train({:iq => :low_iq, :sat_score => :low}, 550)
 
     # which of course updates the estimates
-    assert_pg_equal({:high, => (90 + 95) / 200.0, :low => (10 + 5) / 200.0},
-                    pgm.output_prob(:sat_score, {:iq => :high}))
-    assert_pg_equal({:high_iq => 200 / 2000.0, :low_iq => 1800 / 2000.0},
-                    pgm.output_prob(:iq))
+    assert_pe_equal({:high, => (90 + 95) / 200.0, :low => (10 + 5) / 200.0},
+                    pgm.estimate(:sat_score, {:iq => :high}))
+    assert_pe_equal({:high_iq => 200 / 2000.0, :low_iq => 1800 / 2000.0},
+                    pgm.estimate(:iq))
 
     # Of course, you can add nodes to the network at any time
-    pgm.add_node(:difficulty, [:high, :low])
+    pgm.add_node(:difficulty, [:hard, :easy])
     pgm.add_node(:grade, [:a, :b, :c], [:difficulty, :iq])
     pgm.add_node(:recommendation_letter, [:yes, :no], [:grade])
 
     # though to get good estimates of the added values the pgm will need data
-    assert_pg_equal({:a => 0.33, :b => 0.33, :c => 0.33},
-                    pgm.output_prob(:grade))
+    assert_pe_equal({:hard => 0.5, :easy => 0.5},
+                    pgm.estimate(:difficulty))
+    pgm.train({:difficulty => :hard}, 400)
+    pgm.train({:difficulty => :easy}, 600)
+    assert_pe_equal({:hard => 0.4, :easy => 0.6},
+                    pgm.estimate(:difficulty))
+    pgm.train({:difficulty => :easy}, 1000)
+    assert_pe_equal({:hard => 0.2, :easy => 0.8},
+                    pgm.estimate(:difficulty))
 
-    pgm.train({:difficulty => :high}, 400)
-    pgm.train({:difficulty => :low}, 600)
-  end
+    # you can also update only a single node's notion of liklihood
+    pgm.train_only(:grade, {:difficulty => :hard, :iq => :high_iq, :grade => :a}, 25)
+    pgm.train_only(:grade, {:difficulty => :hard, :iq => :high_iq, :grade => :b}, 60)
+    pgm.train_only(:grade, {:difficulty => :hard, :iq => :high_iq, :grade => :c}, 15)
 
-  def old_building_syntax
-    pgm = PGM.new({
-      :iq => [140, 130, 120, 110, 100],
-      :sat_score => [:high, :low],
-      :difficulty => [:high, :low],
-      :grade => [:a, :b, :c],
-      :recommendation_letter => [:good, :bad],
-    }, {
-      :iq => [:grade, :sat_score]
-      :difficulty => [:grade]
-      :grade => [:recommendation_letter]
-    })
+    # or save typing by doing so in bulk
+    pgm.train_only(:grade, {:difficulty => :easy, :iq => :high_iq}, {:a => 70, :b => 20, :c => 10})
+    pgm.train_only(:grade, {:difficulty => :hard, :iq => :low_iq}, {:a => 10, :b => 40, :c => 50})
+    pgm.train_only(:grade, {:difficulty => :easy, :iq => :low_iq}, {:a => 30, :b => 50, :c => 20})
 
-    pgm[:iq] = {140 => 50, 130 => 80, 120 => 500, 110 => 1000, 100 => 17}
+    # let's look at some inferences now, from the obvious:
+    assert_pe_equal({:hard => 0.2, :easy => 0.8},
+                    pgm.estimate(:difficulty))
+    assert_pe_equal({:high_iq => 0.1, :low_iq => 0.9},
+                    pgm.estimate(:iq))
+
+    # to the not-so-obvious (remember that grade is causally connected
+    # with iq and difficulty)
+    assert_pe_equal({:a => ((95/200.0) * 0.2) + ((40/200.0) * 0.8),
+                     :b => ((80/200.0) * 0.2) + ((90/200.0) * 0.8),
+                     :c => ((25/200.0) * 0.2) + ((70/200.0) * 0.8)},
+                    pgm.estimate(:grade))
+
+    # we can also have it perform inference while we hold some values fixed
+    assert_pe_equal({:a => 95/200.0,
+                     :b => 80/200.0,
+                     :c => 25/200.0},
+                    pgm.estimate(:grade, {:iq => :high_iq}))
+
+    assert_pe_equal({:a => 70/100.0,
+                     :b => 20/100.0,
+                     :c => 10/100.0},
+                    pgm.estimate(:grade, {:iq => :high_iq, :difficulty => :easy}))
+
+    # even some non-obvious inferences are now easy (remember that sat
+    # score was dependant on iq)
+    assert_pe_equal({:high_iq => 90/100.0, :low_iq => 10/100.0},
+                    pgm.estimate(:iq, {:sat_score => :high}))
+
+    assert_pe_equal({:a => ((95/200.0) * 0.9) + ((40/200.0) * 0.1),
+                     :b => ((80/200.0) * 0.9) + ((90/200.0) * 0.1),
+                     :c => ((25/200.0) * 0.9) + ((70/200.0) * 0.1)},
+                    pgm.estimate(:grade, {:sat_score => :high, :difficulty => :easy}))
   end
 end

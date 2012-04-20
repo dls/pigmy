@@ -7,19 +7,17 @@ and high expressiveness, the core pgm operations for use in A/B
 testing, quick-and-dirty command line inference, and other light ML
 workloads.
 
-Since there are many existing libraries that provide high performance
-implementations, and the implementation choice of ruby rather limits
-our options in this regard, this library will likely live and die on
-its ease of use.
-
 If you are the sort of person who finds code easier to read than
 equations, this library may also prove useful in learning how pgms
 function, and in honing your probabilistic intuition
 generally. Consider working through "pgm_tutorial.rb" in the test
 directory and work out why each test passes.
 
+This library is currently in a state of high flux. No interfaces are
+stable, it is being up to to movite my completion, get early feedback,
+etc.
 
-Feedback and commits eagerly solicited :)
+Feedback and pull requests solicited :)
 
 Contributors:
 - Your name here
