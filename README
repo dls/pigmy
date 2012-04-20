@@ -3,13 +3,13 @@ Pigmy - Probabilistic Graphical Models for ruby
 Written by David Salamon <dls@lithp.org>. BSD Licensed.
 
 The goal of this project is to implement with reasonable efficiency,
-and high expressiveness, the core pgm opperations for use in A/B
+and high expressiveness, the core pgm operations for use in A/B
 testing, quick-and-dirty command line inference, and other light ML
 workloads.
 
-Since there are many exisitng libraries that provide high performance
+Since there are many existing libraries that provide high performance
 implementations, and the implementation choice of ruby rather limits
-our options in this reguard, this library will likely live and die on
+our options in this regard, this library will likely live and die on
 its ease of use.
 
 If you are the sort of person who finds code easier to read than
