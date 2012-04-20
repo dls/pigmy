@@ -1,0 +1,28 @@
+PiGMy - Probabilistic Graphical Models for ruby
+
+Written by David Salamon <dls@lithp.org>. BSD Licensed.
+
+The goal of this project is to implement with reasonable efficiency,
+and high expressiveness, the core pgm opperations for use in A/B
+testing, quick-and-dirty command line inference, and other light ML
+workloads.
+
+Since there are many exisitng libraries that provide high performance
+implementations, and the implementation choice of ruby rather limits
+our options in this reguard, this library will likely live and die on
+its ease of use.
+
+If you are the sort of person who finds code easier to read than
+equations, this library may also prove useful in learning how pgms
+function, and in honing your probabilistic intuition
+generally. Consider working through "pgm_lecture.rb" in the tests
+directory and work out why each test passes.
+
+
+Feedback and commits eagerly solicited :)
+
+Contributors:
+- David Salamon <dls@lithp.org>
+
+
+Current Release Notes:
