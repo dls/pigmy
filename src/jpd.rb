@@ -68,6 +68,14 @@ class JPD
     end
   end
 
+  def assign(given, values)
+    for t in dfs_for_given(given)
+      values.keys_and_values do |k,v|
+        t[k] = v
+      end
+    end
+  end
+
   protected
   def dfs_for_given(given)
     tables = [@table]
