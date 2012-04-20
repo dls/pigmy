@@ -1,16 +1,15 @@
-class PD
+class JPD
   attr_accessor :inputs
   attr_accessor :table
-  attr_accessor :update_table
   attr_accessor :outputs
 
   def initialize(inputs, outputs)
     @inputs = inputs
     @table = {}
-    @update_table = {}
+    @evidence = "__pgm-ev"
     @outputs = outputs
 
-    tables = [@table, @update_table]
+    tables = [@table]
     next_tables = []
     for i in inputs
       for iv in i
@@ -20,27 +19,22 @@ class PD
           next_tables << n
         end
       end
-
       tables = next_tables
       next_tables = {}
     end
 
     starting_p = 1.0 / outputs.length
-    for t in DFS_for_given(@table, nil)
+    for t in tables
+      t[@evidence] = 0
       for o in outputs
         t[o] = starting_p
-      end
-    end
-    for t in DFS_for_given(@update_table, nil)
-      for o in outputs
-        t[o] = 0
       end
     end
   end
 
   # the probability of all outputs
   def output_probs(given)
-    tables = DFS_for_given(@table, given)
+    tables = dfs_for_given(given)
 
     op = Hash.new 0.0
     for t in tables
@@ -71,42 +65,20 @@ class PD
   end
 
   def update(given, output)
-    tables = DFS_for_given(@update_table, given)
-
-    for t in tables
-      t[output] += 1
-    end
-  end
-
-  def commit_updates
-    real_tables = [@table]
-    next_real_tables = []
-    update_tables = [@update_table]
-    next_update_tables = []
-
-    for i in inputs
-      for vi in i
-        for rt in real_tables
-          next_real_tables << rt[vi]
-        end
-        for ut in update_tables
-          next_update_tables << ut[vi]
-        end
+    for t in dfs_for_given(given)
+      e = t[@evidence] * 1.0
+      em = e / (e + 1.0)
+      for o in @outputs
+        t[o] *= em
+        t[o] += 1.0 / (e + 1.0) if o == output
       end
-      real_tables = next_real_tables
-      next_real_tables = []
-      update_tables = next_update_tables
-      next_update_tables = []
-    end
-
-    for rt, ut in real_tables.zip(update_tables)
-      ut_total = 0; ut.values.each {|e| ut_total += e}
-
+      t[@evidence] += 1
     end
   end
 
-  def DFS_for_given(t, given)
-    tables = [t]
+  protected
+  def dfs_for_given(given)
+    tables = [@table]
     next_tables = []
     for i in inputs
       for vi in i
@@ -128,12 +100,14 @@ def assert_equal(expected, got)
   end
 end
 
-p = PD.new([[1,2]], [1])
-assert_equal({1=>1.0}, p.output_probs(nil))
-assert_equal(1, p.pull(nil))
-assert_equal(1, p.pull({ [1,2] => [2] }))
+p = JPD.new([[1,2]], [:a,:b])
+assert_equal({:a=>0.5, :b=>0.5}, p.output_probs(nil))
 
-puts p.update_table.inspect
-p.update({[1,2] => [1]}, 1)
-puts p.update_table.inspect
+puts p.table.inspect
+p.update({[1,2] => [1]}, :a)
+puts p.table.inspect
 
+assert_equal({:a=>0.75, :b=>0.25}, p.output_probs(nil))
+assert_equal({:a=>0.5, :b=>0.5}, p.output_probs({[1,2] => [2]}))
+assert_equal({:a=>1.0, :b=>0.0}, p.output_probs({[1,2] => [1]}))
+assert_equal(:a, p.pull({[1,2] => [1]}))
