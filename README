@@ -1,4 +1,4 @@
-PiGMy - Probabilistic Graphical Models for ruby
+Pigmy - Probabilistic Graphical Models for ruby
 
 Written by David Salamon <dls@lithp.org>. BSD Licensed.
 
@@ -22,7 +22,7 @@ directory and work out why each test passes.
 Feedback and commits eagerly solicited :)
 
 Contributors:
-- David Salamon <dls@lithp.org>
+- Your name here
 
 
 Current Release Notes:

@@ -100,14 +100,3 @@ def assert_equal(expected, got)
   end
 end
 
-p = JPD.new([[1,2]], [:a,:b])
-assert_equal({:a=>0.5, :b=>0.5}, p.output_probs(nil))
-
-puts p.table.inspect
-p.update({[1,2] => [1]}, :a)
-puts p.table.inspect
-
-assert_equal({:a=>0.75, :b=>0.25}, p.output_probs(nil))
-assert_equal({:a=>0.5, :b=>0.5}, p.output_probs({[1,2] => [2]}))
-assert_equal({:a=>1.0, :b=>0.0}, p.output_probs({[1,2] => [1]}))
-assert_equal(:a, p.pull({[1,2] => [1]}))
