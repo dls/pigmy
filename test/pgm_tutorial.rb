@@ -5,22 +5,22 @@ class PgmTutorial < Test::Unit::TestCase
   def assert_pe_equal(expected, result)
     assert_equal([], expected.keys - result.keys)
     for k in expected.keys
-      assert_in_delta(expected[k], result[k], 0.05)
+      assert_in_delta(expected[k], result[k], 0.05, "for value #{k}")
     end
   end
 
   # works through Daphne Koller's Student example network
   # for best results, read this after viewing week 1 at
   # https://class.coursera.org/pgm/lecture/preview
-  def university_test
-    pmg = PGM.new
+  def test_university_example
+    pgm = PGM.new
 
     # first we build out some nodes
-    pmg.add_node(:iq, [:high_iq, :low_iq])
+    pgm.add_node(:iq, [:high_iq, :low_iq])
     # you should read the last line as:
     # "there something called iq that can is high or low"
     pgm.add_node(:sat_score, [:high, :low], [:iq])
-    # read "sat_scores can be high or low, and depends on iq"
+    # read "sat_scores can be high or low, and depend on iq"
 
     # and then add data we have observed
     pgm.train({:iq => :high_iq, :sat_score => :high}, 90)
@@ -45,6 +45,7 @@ class PgmTutorial < Test::Unit::TestCase
     assert_pe_equal({:high => 90/100.0, :low => 10/100.0},
                     pgm.estimate(:sat_score, {:iq => :high_iq}))
 
+puts pgm.nodes.inspect
     # including givens that run "backwards"
     assert_pe_equal({:high_iq => 90/490.0, :low_iq => 400/490.0},
                     pgm.estimate(:iq, {:sat_score => :high}))
