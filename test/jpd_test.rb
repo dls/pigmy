@@ -21,7 +21,11 @@ class JpdTest < Test::Unit::TestCase
     assert_equal([], expected.keys - result.keys)
 
     for k in expected.keys
-      assert_in_delta(expected[k], result[k], 0.01, "for value #{k}")
+      if result[k].is_a? Hash
+        assert_pe_equal(expected[k], result[k])
+      else
+        assert_in_delta(expected[k], result[k], 0.01, "for value #{k}")
+      end
     end
   end
 
@@ -52,20 +56,12 @@ class JpdTest < Test::Unit::TestCase
   end
 
   def test_reverse
-    assert_pe_equal({:a => 0.5, :b => 0.5}, @p.reverse_estimate({:in => 1}))
-    assert_pe_equal({:a => 0.5, :b => 0.5}, @p.reverse_estimate({:in => 2}))
-    assert_pe_equal({:a => 0.5, :b => 0.5},
-                    @p.reverse_estimate({:in => {1 => 0.2, 2 => 0.8}}))
+    assert_pe_equal({:in => {1 => 0.5, 2 => 0.5}}, @p.reverse_estimate({:a => 1}))
 
     @p.update({:in => [1]}, :a, 10)
     @p.update({:in => [2]}, :a, 5)
     @p.update({:in => [2]}, :b, 5)
 
-puts @p.table.inspect
-
-    assert_pe_equal({:a => 0.5, :b => 0.5}, @p.reverse_estimate({:in => 1}))
-    assert_pe_equal({:a => 0.5, :b => 0.5}, @p.reverse_estimate({:in => 2}))
-    assert_pe_equal({:a => 0.5, :b => 0.5},
-                    @p.reverse_estimate({:in => {1 => 0.2, 2 => 0.8}}))
+    assert_pe_equal({:in => {1 => 0.66, 2 => 0.33}}, @p.reverse_estimate(:a => 1))
   end
 end

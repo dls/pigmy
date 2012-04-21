@@ -79,14 +79,12 @@ class JPD
 
     frequencies = {}
     for name in @inputs.keys
-      for value in @inputs[name]
-        for c in cases
-          next unless c[2][name] == value
-          frequencies[name] ||= {}
+      frequencies[name] = Hash.new 0
 
-          for o in @outputs
-            frequencies[name][value] += c[0] * c[1][o] * output[o]
-          end
+      for c in cases
+        value = c[2][name]
+        for o in @outputs
+          frequencies[name][value] += c[0] * c[1][o] * (output[o] || 0)
         end
       end
     end
@@ -102,7 +100,27 @@ class JPD
     frequencies
   end
 
+  def reverse_sample(output, given={})
+    estimate = reverse_estimate(output, given={})
+
+    for input in @input_ordering
+      assign_input(estimate, input)
+    end
+
+    estimate
+  end
+
   protected
+  def assign_input(estimate, input)
+    index = rand
+    ordered = estimate[input].keys
+    for o in ordered
+      index -= estimate[input][o]
+      estimate[input] = o if index < 0
+    end
+    estimate[input] = ordered[-1] if estimate[input].is_a? Hash
+  end
+
   def dfs_for_given(given)
     tables = [[1, @table]]
     next_tables = []
@@ -128,7 +146,7 @@ class JPD
         for t in tables
           next_tables << [t[0] * given_multiplier(given, name, value),
                           t[1][value],
-                          t[2].copy.merge(name => value)]
+                          t[2].clone.merge(name => value)]
         end
       end
       tables = next_tables
